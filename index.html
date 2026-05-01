@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="五金店管家">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>五金店管家 - 进销存管理</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#d97706',
+                        'primary-dark': '#b45309',
+                        'primary-light': '#fef3c7',
+                        accent: '#1e3a5f',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
+        }
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f5f5f5;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .page {
+            display: none;
+            animation: fadeIn 0.2s ease;
+            padding-bottom: calc(80px + var(--safe-bottom));
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: #fff;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            padding-bottom: var(--safe-bottom);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: #9ca3af;
+            font-size: 11px;
+            font-weight: 500;
+            position: relative;
+        }
+        .nav-item.active {
+            color: #d97706;
+            font-weight: 600;
+        }
+        .nav-item .nav-icon {
+            font-size: 22px;
+            margin-bottom: 2px;
+            transition: transform 0.2s;
+        }
+        .nav-item.active .nav-icon {
+            transform: scale(1.15);
+        }
+        .nav-item:active {
+            transform: scale(0.94);
+        }
+        .btn-tap:active {
+            transform: scale(0.95);
+            opacity: 0.85;
+            transition: all 0.08s;
+        }
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            margin-bottom: 10px;
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.2s;
+            background: #fafafa;
+            outline: none;
+        }
+        .input-field:focus {
+            border-color: #d97706;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.08);
+        }
+        .badge-warning {
+            background: #fef3c7;
+            color: #b45309;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-success {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 60;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            animation: fadeIn 0.2s;
+        }
+        .modal-sheet {
+            background: #fff;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 18px 18px 0 0;
+            padding: 16px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.25s ease;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        .scan-highlight {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+        .scan-highlight::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 3px;
+            background: #d97706;
+            animation: scanLine 2s infinite;
+            box-shadow: 0 0 20px #d97706;
+        }
+        @keyframes scanLine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        #scanVideo {
+            width: 100%;
+            max-height: 280px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #000;
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-800">
+
+    <!-- Toast容器 -->
+    <div id="toastContainer"></div>
+
+    <!-- 扫码弹窗 -->
+    <div id="scanModal" class="modal-overlay hidden">
+        <div class="modal-sheet">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold">📷 扫码识别</h3>
+                <button onclick="closeScanModal()" class="text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <div class="scan-highlight mb-3">
+                <video id="scanVideo" autoplay playsinline></video>
+            </div>
+            <p id="scanResult" class="text-center text-sm text-gray-500 mb-2">将条形码对准扫描区域</p>
+            <div class="flex gap-2">
+                <button onclick="stopScan()" class="flex-1 py-2 bg-gray-200 rounded-lg font-medium btn-tap">停止扫描</button>
+                <button onclick="manualBarcode()" class="flex-1 py-2 bg-primary text-white rounded-lg font-medium btn-tap">手动输入条码</button>
+            </div>
+            <input type="text" id="manualBarcodeInput" placeholder="输入条形码编号" class="input-field mt-2 hidden">
+            <button id="manualBarcodeBtn" onclick="confirmManualBarcode()" class="w-full py-2 bg-primary text-white rounded-lg font-medium btn-tap mt-2 hidden">确认条码</button>
+        </div>
+    </div>
+
+    <!-- 商品编辑弹窗 -->
+    <div id="productEditModal" class="modal-overlay hidden">
+        <div class="modal-sheet">
+            <h3 class="text-lg font-bold mb-3" id="productEditTitle">添加商品</h3>
+            <form id="productEditForm" onsubmit="saveProduct(event)" class="space-y-3">
+                <input type="hidden" id="editProductId">
+                <div>
+                    <label class="text-xs text-gray-500 font-medium">商品名称 *</label>
+                    <input type="text" id="editProductName" required class="input-field" placeholder="如：十字螺丝刀">
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">拼音码</label>
+                        <input type="text" id="editPinyinCode" class="input-field" placeholder="自动生成" readonly>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">条形码</label>
+                        <input type="text" id="editBarcode" class="input-field" placeholder="扫描或手动输入">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">分类</label>
+                        <input type="text" id="editCategory" class="input-field" placeholder="如：螺丝类">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">单位</label>
+                        <input type="text" id="editUnit" class="input-field" placeholder="个/箱/袋" value="个">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">进货价(成本) ¥</label>
+                        <input type="number" id="editCostPrice" step="0.01" class="input-field" placeholder="0.00">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">售价 ¥</label>
+                        <input type="number" id="editSellingPrice" step="0.01" class="input-field" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">库存下限</label>
+                        <input type="number" id="editMinStock" class="input-field" placeholder="预警最小值" value="5">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-medium">库存上限</label>
+                        <input type="number" id="editMaxStock" class="input-field" placeholder="预警最大值" value="100">
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeProductEdit()" class="flex-1 py-3 bg-gray-200 rounded-xl font-medium btn-tap">取消</button>
+                    <button type="submit" class="flex-1 py-3 bg-primary text-white rounded-xl font-bold btn-tap">💾 保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主页面容器 -->
+    <!-- 页面1: 开单 -->
+    <div id="page-billing" class="page active px-3 pt-3">
+        <div class="flex gap-2 mb-3">
+            <button id="tabSale" onclick="switchBillingTab('sale')" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-primary text-white btn-tap">🛒 销售开单</button>
+            <button id="tabPurchase" onclick="switchBillingTab('purchase')" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-gray-200 text-gray-600 btn-tap">📥 进货开单</button>
+        </div>
+        <div class="card">
+            <div class="flex gap-2 mb-2">
+                <div class="flex-1 relative">
+                    <input type="text" id="billingSearchInput" oninput="billingSearch()" placeholder="🔍 拼音码/名称/条码搜索商品" class="input-field pr-10" autocomplete="off">
+                </div>
+                <button onclick="openScanForBilling()" class="px-3 py-2 bg-accent text-white rounded-xl font-medium btn-tap text-sm">📷扫码</button>
+            </div>
+            <div id="billingSearchResults" class="max-h-48 overflow-y-auto hidden"></div>
+        </div>
+        <div id="billingCartContainer" class="card">
+            <h4 class="font-bold text-sm mb-2" id="billingCartTitle">📋 销售清单</h4>
+            <div id="billingCartItems" class="space-y-2 min-h-[60px]">
+                <p class="text-gray-400 text-center text-sm py-4">暂无商品，请搜索添加</p>
+            </div>
+            <div id="billingTotal" class="hidden border-t pt-3 mt-3">
+                <div class="flex justify-between font-bold text-lg">
+                    <span>合计金额：</span>
+                    <span class="text-primary" id="billingTotalAmount">¥0.00</span>
+                </div>
+                <button onclick="confirmBilling()" id="billingConfirmBtn" class="w-full py-3 bg-primary text-white rounded-xl font-bold mt-2 btn-tap text-base">✅ 确认开单</button>
+            </div>
+        </div>
+        <input type="hidden" id="billingType" value="sale">
+    </div>
+
+    <!-- 页面2: 商品管理 -->
+    <div id="page-products" class="page px-3 pt-3">
+        <div class="flex gap-2 mb-3">
+            <input type="text" id="productSearchInput" oninput="loadProducts()" placeholder="🔍 拼音码/名称搜索" class="input-field flex-1">
+            <button onclick="openProductEdit()" class="px-4 py-2 bg-primary text-white rounded-xl font-bold btn-tap text-sm whitespace-nowrap">+ 新增</button>
+        </div>
+        <div class="flex gap-2 mb-2 flex-wrap">
+            <span class="text-xs text-gray-500 self-center">分类筛选：</span>
+            <select id="categoryFilter" onchange="loadProducts()" class="text-xs py-1.5 px-3 border rounded-lg bg-white">
+                <option value="">全部分类</option>
+            </select>
+        </div>
+        <div id="productList" class="space-y-2"></div>
+        <p id="productCount" class="text-center text-xs text-gray-400 mt-3"></p>
+    </div>
+
+    <!-- 页面3: 库存查询 -->
+    <div id="page-stock" class="page px-3 pt-3">
+        <div class="flex gap-2 mb-3">
+            <input type="text" id="stockSearchInput" oninput="loadStock()" placeholder="🔍 搜索商品" class="input-field flex-1">
+            <select id="stockFilter" onchange="loadStock()" class="py-2 px-3 border rounded-xl bg-white text-sm">
+                <option value="all">全部库存</option>
+                <option value="warning">⚠️ 预警商品</option>
+                <option value="low">低于下限</option>
+                <option value="high">高于上限</option>
+                <option value="zero">零库存</option>
+            </select>
+        </div>
+        <div class="card bg-amber-50 border border-amber-200 mb-3 hidden" id="warningSummary">
+            <p class="text-sm font-bold text-amber-700">⚠️ 库存预警概览</p>
+            <p class="text-xs text-amber-600" id="warningSummaryText"></p>
+        </div>
+        <div id="stockList" class="space-y-2"></div>
+    </div>
+
+    <!-- 页面4: 统计报表 -->
+    <div id="page-reports" class="page px-3 pt-3">
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="card bg-gradient-to-br from-blue-50 to-blue-100 text-center">
+                <p class="text-xs text-blue-600 font-medium">今日销售额</p>
+                <p class="text-2xl font-bold text-blue-800" id="todaySales">¥0.00</p>
+                <p class="text-xs text-blue-500" id="todayOrders">0笔</p>
+            </div>
+            <div class="card bg-gradient-to-br from-green-50 to-green-100 text-center">
+                <p class="text-xs text-green-600 font-medium">本月销售额</p>
+                <p class="text-2xl font-bold text-green-800" id="monthSales">¥0.00</p>
+                <p class="text-xs text-green-500" id="monthOrders">0笔</p>
+            </div>
+            <div class="card bg-gradient-to-br from-purple-50 to-purple-100 text-center">
+                <p class="text-xs text-purple-600 font-medium">今日利润</p>
+                <p class="text-2xl font-bold text-purple-800" id="todayProfit">¥0.00</p>
+            </div>
+            <div class="card bg-gradient-to-br from-orange-50 to-orange-100 text-center">
+                <p class="text-xs text-orange-600 font-medium">本月利润</p>
+                <p class="text-2xl font-bold text-orange-800" id="monthProfit">¥0.00</p>
+            </div>
+        </div>
+        <div class="card">
+            <h4 class="font-bold text-sm mb-3">🔥 热销排行（本月）</h4>
+            <div id="hotRanking" class="space-y-2">
+                <p class="text-gray-400 text-center text-sm py-3">暂无销售数据</p>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <h4 class="font-bold text-sm mb-2">📅 按日期查看</h4>
+            <div class="flex gap-2">
+                <input type="date" id="reportStartDate" class="input-field flex-1 text-sm">
+                <input type="date" id="reportEndDate" class="input-field flex-1 text-sm">
+                <button onclick="loadReports()" class="px-4 py-2 bg-accent text-white rounded-xl font-medium btn-tap text-sm">查询</button>
+            </div>
+            <div id="customReportResult" class="mt-2 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- 页面5: 设置与备份 -->
+    <div id="page-settings" class="page px-3 pt-3">
+        <div class="card">
+            <h4 class="font-bold text-sm mb-3">💾 数据备份与恢复</h4>
+            <button onclick="exportCSV()" class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold mb-2 btn-tap">📥 导出商品CSV</button>
+            <button onclick="exportSalesCSV()" class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold mb-2 btn-tap">📥 导出销售记录CSV</button>
+            <button onclick="exportFullBackup()" class="w-full py-3 bg-green-500 text-white rounded-xl font-bold mb-2 btn-tap">📦 导出完整备份(JSON)</button>
+            <div class="border-t pt-2 mt-2">
+                <label class="block text-xs text-gray-500 font-medium mb-1">📤 恢复备份（选择JSON文件）</label>
+                <input type="file" id="restoreFileInput" accept=".json" onchange="restoreBackup()" class="input-field text-sm">
+                <p class="text-xs text-red-500 mt-1">⚠️ 恢复将覆盖现有数据，请谨慎操作</p>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <h4 class="font-bold text-sm mb-2">📊 数据概览</h4>
+            <div id="dataOverview" class="text-sm text-gray-600 space-y-1"></div>
+            <button onclick="clearAllData()" class="w-full py-2 bg-red-500 text-white rounded-xl font-bold mt-3 btn-tap text-sm">🗑️ 清除所有数据</button>
+        </div>
+        <div class="card mt-3">
+            <h4 class="font-bold text-sm mb-2">ℹ️ 关于</h4>
+            <p class="text-xs text-gray-500">五金店管家 v1.0</p>
+            <p class="text-xs text-gray-400">纯前端 · IndexedDB持久化 · PWA</p>
+            <p class="text-xs text-gray-400">数据存储在浏览器中，请定期备份</p>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <nav class="nav-bar">
+        <div class="nav-item active" data-page="billing" onclick="switchPage('billing')">
+            <span class="nav-icon">📝</span>开单
+        </div>
+        <div class="nav-item" data-page="products" onclick="switchPage('products')">
+            <span class="nav-icon">📦</span>商品
+        </div>
+        <div class="nav-item" data-page="stock" onclick="switchPage('stock')">
+            <span class="nav-icon">🏗️</span>库存
+        </div>
+        <div class="nav-item" data-page="reports" onclick="switchPage('reports')">
+            <span class="nav-icon">📊</span>报表
+        </div>
+        <div class="nav-item" data-page="settings" onclick="switchPage('settings')">
+            <span class="nav-icon">⚙️</span>设置
+        </div>
+    </nav>
+
+    <script>
+        // ==================== IndexedDB 封装 ====================
+        const DB_NAME = 'HardwareStoreDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains('products')) {
+                        const productStore = database.createObjectStore('products', { keyPath: 'id',
+                            autoIncrement: true });
+                        productStore.createIndex('name', 'name', { unique: false });
+                        productStore.createIndex('pinyinCode', 'pinyinCode', { unique: false });
+                        productStore.createIndex('barcode', 'barcode', { unique: false });
+                        productStore.createIndex('category', 'category', { unique: false });
+                        productStore.createIndex('stock', 'stock', { unique: false });
+                    }
+                    if (!database.objectStoreNames.contains('salesRecords')) {
+                        const salesStore = database.createObjectStore('salesRecords', { keyPath: 'id',
+                            autoIncrement: true });
+                        salesStore.createIndex('productId', 'productId', { unique: false });
+                        salesStore.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                    if (!database.objectStoreNames.contains('purchaseRecords')) {
+                        const purchaseStore = database.createObjectStore('purchaseRecords', { keyPath: 'id',
+                            autoIncrement: true });
+                        purchaseStore.createIndex('productId', 'productId', { unique: false });
+                        purchaseStore.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => {
+                    reject(e.target.error);
+                };
+            });
+        }
+
+        function getStore(storeName, mode = 'readonly') {
+            if (!db) throw new Error('数据库未初始化');
+            const tx = db.transaction(storeName, mode);
+            return tx.objectStore(storeName);
+        }
+
+        function dbAdd(storeName, data) {
+            return new Promise((resolve, reject) => {
+                const store = getStore(storeName, 'readwrite');
+                const request = store.add(data);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbPut(storeName, data) {
+            return new Promise((resolve, reject) => {
+                const store = getStore(storeName, 'readwrite');
+                const request = store.put(data);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbGet(storeName, id) {
+            return new Promise((resolve, reject) => {
+                const store = getStore(storeName);
+                const request = store.get(id);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbGetAll(storeName) {
+            return new Promise((resolve, reject) => {
+                const store = getStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbDelete(storeName, id) {
+            return new Promise((resolve, reject) => {
+                const store = getStore(storeName, 'readwrite');
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbClear(storeName) {
+            return new Promise((resolve, reject) => {
+                const store = getStore(storeName, 'readwrite');
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function dbGetByIndex(storeName, indexName, value) {
+            return new Promise((resolve, reject) => {
+                const store = getStore(storeName);
+                const index = store.index(indexName);
+                const request = index.getAll(value);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // ==================== 拼音工具 ====================
+        const PINYIN_MAP = {
+            '啊': 'A',
+            '阿': 'A',
+            '安': 'A',
+            '按': 'A',
+            '暗': 'A',
+            '八': 'B',
+            '把': 'B',
+            '白': 'B',
+            '百': 'B',
+            '扳': 'B',
+            '板': 'B',
+            '版': 'B',
+            '办': 'B',
+            '半': 'B',
+            '包': 'B',
+            '保': 'B',
+            '报': 'B',
+            '爆': 'B',
+            '杯': 'B',
+            '北': 'B',
+            '备': 'B',
+            '被': 'B',
+            '本': 'B',
+            '泵': 'B',
+            '比': 'B',
+            '笔': 'B',
+            '必': 'B',
+            '边': 'B',
+            '变': 'B',
+            '标': 'B',
+            '表': 'B',
+            '别': 'B',
+            '冰': 'B',
+            '并': 'B',
+            '波': 'B',
+            '玻': 'B',
+            '不': 'B',
+            '布': 'B',
+            '步': 'B',
+            '部': 'B',
+            '擦': 'C',
+            '材': 'C',
+            '采': 'C',
+            '彩': 'C',
+            '菜': 'C',
+            '参': 'C',
+            '餐': 'C',
+            '仓': 'C',
+            '操': 'C',
+            '槽': 'C',
+            '草': 'C',
+            '册': 'C',
+            '测': 'C',
+            '层': 'C',
+            '插': 'C',
+            '查': 'C',
+            '茶': 'C',
+            '差': 'C',
+            '拆': 'C',
+            '产': 'C',
+            '长': 'C',
+            '常': 'C',
+            '厂': 'C',
+            '场': 'C',
+            '超': 'C',
+            '车': 'C',
+            '彻': 'C',
+            '陈': 'C',
+            '称': 'C',
+            '成': 'C',
+            '承': 'C',
+            '城': 'C',
+            '程': 'C',
+            '吃': 'C',
+            '迟': 'C',
+            '持': 'C',
+            '尺': 'C',
+            '齿': 'C',
+            '充': 'C',
+            '冲': 'C',
+            '抽': 'C',
+            '出': 'C',
+            '初': 'C',
+            '除': 'C',
+            '处': 'C',
+            '储': 'C',
+            '触': 'C',
+            '穿': 'C',
+            '传': 'C',
+            '窗': 'C',
+            '床': 'C',
+            '创': 'C',
+            '吹': 'C',
+            '垂': 'C',
+            '锤': 'C',
+            '春': 'C',
+            '纯': 'C',
+            '磁': 'C',
+            '此': 'C',
+            '次': 'C',
+            '从': 'C',
+            '粗': 'C',
+            '促': 'C',
+            '寸': 'C',
+            '措': 'C',
+            '错': 'C',
+            '达': 'D',
+            '打': 'D',
+            '大': 'D',
+            '代': 'D',
+            '带': 'D',
+            '待': 'D',
+            '袋': 'D',
+            '单': 'D',
+            '担': 'D',
+            '但': 'D',
+            '弹': 'D',
+            '当': 'D',
+            '刀': 'D',
+            '导': 'D',
+            '到': 'D',
+            '道': 'D',
+            '得': 'D',
+            '灯': 'D',
+            '等': 'D',
+            '低': 'D',
+            '底': 'D',
+            '地': 'D',
+            '第': 'D',
+            '点': 'D',
+            '电': 'D',
+            '垫': 'D',
+            '调': 'D',
+            '钉': 'D',
+            '定': 'D',
+            '订': 'D',
+            '东': 'D',
+            '冬': 'D',
+            '动': 'D',
+            '都': 'D',
+            '读': 'D',
+            '堵': 'D',
+            '度': 'D',
+            '端': 'D',
+            '短': 'D',
+            '段': 'D',
+            '断': 'D',
+            '对': 'D',
+            '吨': 'D',
+            '多': 'D',
+            '夺': 'D',
+            '额': 'E',
+            '二': 'E',
+            '发': 'F',
+            '阀': 'F',
+            '法': 'F',
+            '翻': 'F',
+            '反': 'F',
+            '方': 'F',
+            '防': 'F',
+            '房': 'F',
+            '放': 'F',
+            '飞': 'F',
+            '非': 'F',
+            '废': 'F',
+            '分': 'F',
+            '粉': 'F',
+            '风': 'F',
+            '封': 'F',
+            '否': 'F',
+            '夫': 'F',
+            '服': 'F',
+            '浮': 'F',
+            '符': 'F',
+            '复': 'F',
+            '副': 'F',
+            '富': 'F',
+            '附': 'F',
+            '改': 'G',
+            '盖': 'G',
+            '干': 'G',
+            '杆': 'G',
+            '感': 'G',
+            '钢': 'G',
+            '高': 'G',
+            '告': 'G',
+            '格': 'G',
+            '个': 'G',
+            '各': 'G',
+            '给': 'G',
+            '根': 'G',
+            '更': 'G',
+            '工': 'G',
+            '公': 'G',
+            '功': 'G',
+            '供': 'G',
+            '共': 'G',
+            '沟': 'G',
+            '钩': 'G',
+            '购': 'G',
+            '古': 'G',
+            '固': 'G',
+            '刮': 'G',
+            '挂': 'G',
+            '关': 'G',
+            '观': 'G',
+            '管': 'G',
+            '惯': 'G',
+            '灌': 'G',
+            '光': 'G',
+            '广': 'G',
+            '规': 'G',
+            '硅': 'S',
+            '轨': 'G',
+            '贵': 'G',
+            '滚': 'G',
+            '锅': 'G',
+            '国': 'G',
+            '过': 'G',
+            '哈': 'H',
+            '还': 'H',
+            '海': 'H',
+            '含': 'H',
+            '焊': 'H',
+            '行': 'X',
+            '好': 'H',
+            '号': 'H',
+            '合': 'H',
+            '和': 'H',
+            '河': 'H',
+            '核': 'H',
+            '黑': 'H',
+            '很': 'H',
+            '恒': 'H',
+            '横': 'H',
+            '红': 'H',
+            '厚': 'H',
+            '后': 'H',
+            '呼': 'H',
+            '互': 'H',
+            '护': 'H',
+            '花': 'H',
+            '华': 'H',
+            '滑': 'H',
+            '化': 'H',
+            '划': 'H',
+            '环': 'H',
+            '换': 'H',
+            '黄': 'H',
+            '灰': 'H',
+            '回': 'H',
+            '会': 'H',
+            '混': 'H',
+            '活': 'H',
+            '火': 'H',
+            '或': 'H',
+            '货': 'H',
+            '机': 'J',
+            '基': 'J',
+            '及': 'J',
+            '级': 'J',
+            '极': 'J',
+            '急': 'J',
+            '集': 'J',
+            '几': 'J',
+            '计': 'J',
+            '记': 'J',
+            '技': 'J',
+            '季': 'J',
+            '剂': 'J',
+            '加': 'J',
+            '家': 'J',
+            '甲': 'J',
+            '价': 'J',
+            '架': 'J',
+            '尖': 'J',
+            '间': 'J',
+            '检': 'J',
+            '减': 'J',
+            '简': 'J',
+            '见': 'J',
+            '件': 'J',
+            '建': 'J',
+            '将': 'J',
+            '浆': 'J',
+            '降': 'J',
+            '交': 'J',
+            '胶': 'J',
+            '角': 'J',
+            '绞': 'J',
+            '铰': 'J',
+            '脚': 'J',
+            '接': 'J',
+            '结': 'J',
+            '截': 'J',
+            '解': 'J',
+            '介': 'J',
+            '界': 'J',
+            '金': 'J',
+            '紧': 'J',
+            '进': 'J',
+            '近': 'J',
+            '经': 'J',
+            '精': 'J',
+            '井': 'J',
+            '净': 'J',
+            '静': 'J',
+            '镜': 'J',
+            '九': 'J',
+            '久': 'J',
+            '旧': 'J',
+            '就': 'J',
+            '局': 'J',
+            '举': 'J',
+            '具': 'J',
+            '据': 'J',
+            '锯': 'J',
+            '聚': 'J',
+            '卷': 'J',
+            '决': 'J',
+            '绝': 'J',
+            '均': 'J',
+            '卡': 'K',
+            '开': 'K',
+            '看': 'K',
+            '抗': 'K',
+            '考': 'K',
+            '靠': 'K',
+            '科': 'K',
+            '可': 'K',
+            '克': 'K',
+            '刻': 'K',
+            '空': 'K',
+            '孔': 'K',
+            '控': 'K',
+            '口': 'K',
+            '扣': 'K',
+            '库': 'K',
+            '快': 'K',
+            '宽': 'K',
+            '框': 'K',
+            '扩': 'K',
+            '拉': 'L',
+            '来': 'L',
+            '兰': 'L',
+            '蓝': 'L',
+            '缆': 'L',
+            '老': 'L',
+            '乐': 'L',
+            '了': 'L',
+            '雷': 'L',
+            '类': 'L',
+            '冷': 'L',
+            '离': 'L',
+            '理': 'L',
+            '力': 'L',
+            '立': 'L',
+            '利': 'L',
+            '例': 'L',
+            '连': 'L',
+            '联': 'L',
+            '链': 'L',
+            '良': 'L',
+            '量': 'L',
+            '两': 'L',
+            '亮': 'L',
+            '料': 'L',
+            '列': 'L',
+            '林': 'L',
+            '临': 'L',
+            '零': 'L',
+            '领': 'L',
+            '另': 'L',
+            '流': 'L',
+            '留': 'L',
+            '六': 'L',
+            '龙': 'L',
+            '漏': 'L',
+            '路': 'L',
+            '录': 'L',
+            '陆': 'L',
+            '铝': 'L',
+            '率': 'L',
+            '绿': 'L',
+            '轮': 'L',
+            '论': 'L',
+            '罗': 'L',
+            '螺': 'L',
+            '洛': 'L',
+            '落': 'L',
+            '麻': 'M',
+            '马': 'M',
+            '码': 'M',
+            '买': 'M',
+            '卖': 'M',
+            '满': 'M',
+            '慢': 'M',
+            '忙': 'M',
+            '毛': 'M',
+            '铆': 'M',
+            '没': 'M',
+            '每': 'M',
+            '美': 'M',
+            '门': 'M',
+            '们': 'M',
+            '密': 'M',
+            '面': 'M',
+            '灭': 'M',
+            '民': 'M',
+            '名': 'M',
+            '明': 'M',
+            '模': 'M',
+            '磨': 'M',
+            '末': 'M',
+            '木': 'M',
+            '目': 'M',
+            '拿': 'N',
+            '哪': 'N',
+            '内': 'N',
+            '那': 'N',
+            '纳': 'N',
+            '耐': 'N',
+            '南': 'N',
+            '难': 'N',
+            '脑': 'N',
+            '能': 'N',
+            '泥': 'N',
+            '你': 'N',
+            '年': 'N',
+            '粘': 'Z',
+            '拧': 'N',
+            '牛': 'N',
+            '扭': 'N',
+            '农': 'N',
+            '弄': 'N',
+            '暖': 'N',
+            '排': 'P',
+            '盘': 'P',
+            '旁': 'P',
+            '配': 'P',
+            '喷': 'P',
+            '盆': 'P',
+            '膨': 'P',
+            '批': 'P',
+            '皮': 'P',
+            '片': 'P',
+            '偏': 'P',
+            '漂': 'P',
+            '品': 'P',
+            '平': 'P',
+            '评': 'P',
+            '凭': 'P',
+            '瓶': 'P',
+            '破': 'P',
+            '普': 'P',
+            '七': 'Q',
+            '期': 'Q',
+            '其': 'Q',
+            '奇': 'Q',
+            '起': 'Q',
+            '气': 'Q',
+            '汽': 'Q',
+            '器': 'Q',
+            '千': 'Q',
+            '前': 'Q',
+            '钳': 'Q',
+            '强': 'Q',
+            '墙': 'Q',
+            '切': 'Q',
+            '且': 'Q',
+            '青': 'Q',
+            '轻': 'Q',
+            '清': 'Q',
+            '情': 'Q',
+            '请': 'Q',
+            '球': 'Q',
+            '区': 'Q',
+            '曲': 'Q',
+            '取': 'Q',
+            '去': 'Q',
+            '全': 'Q',
+            '缺': 'Q',
+            '确': 'Q',
+            '群': 'Q',
+            '然': 'R',
+            '燃': 'R',
+            '热': 'R',
+            '人': 'R',
+            '认': 'R',
+            '任': 'R',
+            '日': 'R',
+            '容': 'R',
+            '溶': 'R',
+            '如': 'R',
+            '入': 'R',
+            '软': 'R',
+            '润': 'R',
+            '若': 'R',
+            '三': 'S',
+            '散': 'S',
+            '扫': 'S',
+            '色': 'S',
+            '沙': 'S',
+            '砂': 'S',
+            '筛': 'S',
+            '上': 'S',
+            '少': 'S',
+            '设': 'S',
+            '社': 'S',
+            '射': 'S',
+            '伸': 'S',
+            '身': 'S',
+            '深': 'S',
+            '什': 'S',
+            '生': 'S',
+            '声': 'S',
+            '省': 'S',
+            '剩': 'S',
+            '失': 'S',
+            '施': 'S',
+            '十': 'S',
+            '石': 'S',
+            '时': 'S',
+            '实': 'S',
+            '使': 'S',
+            '始': 'S',
+            '示': 'S',
+            '世': 'S',
+            '市': 'S',
+            '式': 'S',
+            '事': 'S',
+            '试': 'S',
+            '收': 'S',
+            '手': 'S',
+            '首': 'S',
+            '受': 'S',
+            '书': 'S',
+            '输': 'S',
+            '熟': 'S',
+            '属': 'S',
+            '术': 'S',
+            '束': 'S',
+            '数': 'S',
+            '刷': 'S',
+            '双': 'S',
+            '水': 'S',
+            '顺': 'S',
+            '说': 'S',
+            '丝': 'S',
+            '司': 'S',
+            '私': 'S',
+            '四': 'S',
+            '松': 'S',
+            '送': 'S',
+            '速': 'S',
+            '塑': 'S',
+            '酸': 'S',
+            '算': 'S',
+            '随': 'S',
+            '碎': 'S',
+            '损': 'S',
+            '缩': 'S',
+            '所': 'S',
+            '锁': 'S',
+            '他': 'T',
+            '它': 'T',
+            '台': 'T',
+            '太': 'T',
+            '态': 'T',
+            '钛': 'T',
+            '弹': 'T',
+            '探': 'T',
+            '碳': 'T',
+            '堂': 'T',
+            '搪': 'T',
+            '套': 'T',
+            '特': 'T',
+            '提': 'T',
+            '题': 'T',
+            '体': 'T',
+            '替': 'T',
+            '天': 'T',
+            '添': 'T',
+            '条': 'T',
+            '调': 'T',
+            '铁': 'T',
+            '通': 'T',
+            '同': 'T',
+            '铜': 'T',
+            '统': 'T',
+            '头': 'T',
+            '投': 'T',
+            '透': 'T',
+            '突': 'T',
+            '图': 'T',
+            '涂': 'T',
+            '土': 'T',
+            '团': 'T',
+            '推': 'T',
+            '退': 'T',
+            '托': 'T',
+            '脱': 'T',
+            '外': 'W',
+            '完': 'W',
+            '万': 'W',
+            '网': 'W',
+            '往': 'W',
+            '望': 'W',
+            '危': 'W',
+            '为': 'W',
+            '围': 'W',
+            '维': 'W',
+            '卫': 'W',
+            '未': 'W',
+            '位': 'W',
+            '温': 'W',
+            '文': 'W',
+            '稳': 'W',
+            '问': 'W',
+            '无': 'W',
+            '五': 'W',
+            '物': 'W',
+            '雾': 'W',
+            '西': 'X',
+            '吸': 'X',
+            '希': 'X',
+            '析': 'X',
+            '洗': 'X',
+            '系': 'X',
+            '细': 'X',
+            '下': 'X',
+            '先': 'X',
+            '显': 'X',
+            '现': 'X',
+            '线': 'X',
+            '限': 'X',
+            '相': 'X',
+            '箱': 'X',
+            '详': 'X',
+            '响': 'X',
+            '想': 'X',
+            '向': 'X',
+            '项': 'X',
+            '象': 'X',
+            '像': 'X',
+            '橡': 'X',
+            '消': 'X',
+            '销': 'X',
+            '小': 'X',
+            '效': 'X',
+            '校': 'X',
+            '些': 'X',
+            '协': 'X',
+            '斜': 'X',
+            '写': 'X',
+            '泄': 'X',
+            '新': 'X',
+            '信': 'X',
+            '星': 'X',
+            '行': 'X',
+            '形': 'X',
+            '型': 'X',
+            '性': 'X',
+            '修': 'X',
+            '需': 'X',
+            '许': 'X',
+            '序': 'X',
+            '续': 'X',
+            '宣': 'X',
+            '选': 'X',
+            '学': 'X',
+            '雪': 'X',
+            '血': 'X',
+            '循': 'X',
+            '压': 'Y',
+            '牙': 'Y',
+            '亚': 'Y',
+            '烟': 'Y',
+            '延': 'Y',
+            '严': 'Y',
+            '言': 'Y',
+            '研': 'Y',
+            '盐': 'Y',
+            '颜': 'Y',
+            '眼': 'Y',
+            '验': 'Y',
+            '扬': 'Y',
+            '阳': 'Y',
+            '养': 'Y',
+            '样': 'Y',
+            '腰': 'Y',
+            '药': 'Y',
+            '要': 'Y',
+            '也': 'Y',
+            '业': 'Y',
+            '叶': 'Y',
+            '页': 'Y',
+            '夜': 'Y',
+            '液': 'Y',
+            '一': 'Y',
+            '衣': 'Y',
+            '医': 'Y',
+            '依': 'Y',
+            '移': 'Y',
+            '已': 'Y',
+            '以': 'Y',
+            '义': 'Y',
+            '亿': 'Y',
+            '异': 'Y',
+            '易': 'Y',
+            '意': 'Y',
+            '因': 'Y',
+            '阴': 'Y',
+            '音': 'Y',
+            '银': 'Y',
+            '引': 'Y',
+            '印': 'Y',
+            '应': 'Y',
+            '英': 'Y',
+            '营': 'Y',
+            '影': 'Y',
+            '硬': 'Y',
+            '用': 'Y',
+            '优': 'Y',
+            '由': 'Y',
+            '油': 'Y',
+            '游': 'Y',
+            '有': 'Y',
+            '又': 'Y',
+            '右': 'Y',
+            '于': 'Y',
+            '余': 'Y',
+            '鱼': 'Y',
+            '与': 'Y',
+            '雨': 'Y',
+            '语': 'Y',
+            '玉': 'Y',
+            '预': 'Y',
+            '元': 'Y',
+            '原': 'Y',
+            '圆': 'Y',
+            '源': 'Y',
+            '远': 'Y',
+            '约': 'Y',
+            '月': 'Y',
+            '越': 'Y',
+            '云': 'Y',
+            '允': 'Y',
+            '运': 'Y',
+            '杂': 'Z',
+            '载': 'Z',
+            '再': 'Z',
+            '在': 'Z',
+            '咱': 'Z',
+            '早': 'Z',
+            '造': 'Z',
+            '则': 'Z',
+            '择': 'Z',
+            '增': 'Z',
+            '扎': 'Z',
+            '闸': 'Z',
+            '窄': 'Z',
+            '粘': 'Z',
+            '展': 'Z',
+            '占': 'Z',
+            '站': 'Z',
+            '张': 'Z',
+            '长': 'Z',
+            '掌': 'Z',
+            '招': 'Z',
+            '找': 'Z',
+            '照': 'Z',
+            '折': 'Z',
+            '者': 'Z',
+            '这': 'Z',
+            '针': 'Z',
+            '真': 'Z',
+            '振': 'Z',
+            '震': 'Z',
+            '争': 'Z',
+            '整': 'Z',
+            '正': 'Z',
+            '证': 'Z',
+            '政': 'Z',
+            '之': 'Z',
+            '支': 'Z',
+            '知': 'Z',
+            '直': 'Z',
+            '值': 'Z',
+            '职': 'Z',
+            '止': 'Z',
+            '只': 'Z',
+            '纸': 'Z',
+            '指': 'Z',
+            '至': 'Z',
+            '制': 'Z',
+            '质': 'Z',
+            '治': 'Z',
+            '中': 'Z',
+            '终': 'Z',
+            '种': 'Z',
+            '重': 'Z',
+            '周': 'Z',
+            '轴': 'Z',
+            '珠': 'Z',
+            '主': 'Z',
+            '住': 'Z',
+            '助': 'Z',
+            '注': 'Z',
+            '柱': 'Z',
+            '专': 'Z',
+            '转': 'Z',
+            '装': 'Z',
+            '状': 'Z',
+            '准': 'Z',
+            '桌': 'Z',
+            '资': 'Z',
+            '子': 'Z',
+            '自': 'Z',
+            '字': 'Z',
+            '总': 'Z',
+            '走': 'Z',
+            '组': 'Z',
+            '钻': 'Z',
+            '最': 'Z',
+            '作': 'Z',
+            '做': 'Z',
+            '座': 'Z'
+        };
+
+        function getPinyinCode(text) {
+            if (!text) return '';
+            let result = '';
+            for (const char of text) {
+                if (/[a-zA-Z0-9]/.test(char)) {
+                    result += char.toUpperCase();
+                } else if (PINYIN_MAP[char]) {
+                    result += PINYIN_MAP[char];
+                } else {
+                    // 尝试用Unicode范围推测
+                    const code = char.charCodeAt(0);
+                    if (code >= 0x4e00 && code <= 0x9fff) {
+                        result += '?';
+                    }
+                }
+            }
+            return result;
+        }
+
+        // ==================== Toast提示 ====================
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const colors = {
+                success: 'bg-green-500 text-white',
+                error: 'bg-red-500 text-white',
+                warning: 'bg-amber-500 text-white',
+                info: 'bg-blue-500 text-white'
+            };
+            toast.className += ' ' + (colors[type] || colors.info);
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // ==================== 页面切换 ====================
+        function switchPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const pageEl = document.getElementById('page-' + pageName);
+            if (pageEl) pageEl.classList.add('active');
+            const navEl = document.querySelector(`.nav-item[data-page="${pageName}"]`);
+            if (navEl) navEl.classList.add('active');
+
+            if (pageName === 'products') loadProducts();
+            if (pageName === 'stock') loadStock();
+            if (pageName === 'reports') loadReports();
+            if (pageName === 'settings') loadDataOverview();
+            if (pageName === 'billing') {
+                document.getElementById('billingSearchInput').value = '';
+                document.getElementById('billingSearchResults').classList.add('hidden');
+                renderBillingCart();
+            }
+        }
+
+        // ==================== 开单模块 ====================
+        let billingCart = [];
+        let billingType = 'sale'; // 'sale' | 'purchase'
+
+        function switchBillingTab(type) {
+            billingType = type;
+            document.getElementById('billingType').value = type;
+            document.getElementById('tabSale').className = type === 'sale' ?
+                'flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-primary text-white btn-tap' :
+                'flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-gray-200 text-gray-600 btn-tap';
+            document.getElementById('tabPurchase').className = type === 'purchase' ?
+                'flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-primary text-white btn-tap' :
+                'flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-gray-200 text-gray-600 btn-tap';
+            document.getElementById('billingCartTitle').textContent = type === 'sale' ? '📋 销售清单' : '📋 进货清单';
+            document.getElementById('billingConfirmBtn').textContent = type === 'sale' ? '✅ 确认销售' : '✅ 确认进货';
+            billingCart = [];
+            document.getElementById('billingSearchInput').value = '';
+            document.getElementById('billingSearchResults').classList.add('hidden');
+            renderBillingCart();
+        }
+
+        async function billingSearch() {
+            const query = document.getElementById('billingSearchInput').value.trim();
+            const resultsDiv = document.getElementById('billingSearchResults');
+            if (!query || query.length < 1) {
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+            const allProducts = await dbGetAll('products');
+            const q = query.toUpperCase();
+            const filtered = allProducts.filter(p => {
+                return (p.pinyinCode && p.pinyinCode.toUpperCase().includes(q)) ||
+                    (p.name && p.name.toUpperCase().includes(q)) ||
+                    (p.barcode && p.barcode.includes(query)) ||
+                    (p.name && p.name.includes(query));
+            }).slice(0, 15);
+
+            if (filtered.length === 0) {
+                resultsDiv.innerHTML =
+                    '<p class="text-center text-gray-400 text-sm py-3">未找到匹配商品，<span class="text-primary cursor-pointer underline" onclick="openProductEdit()">点击新增</span></p>';
+            } else {
+                resultsDiv.innerHTML = filtered.map(p => `
+                <div class="flex items-center justify-between py-2 px-2 border-b border-gray-100 hover:bg-amber-50 rounded-lg cursor-pointer btn-tap" onclick="addToBillingCart(${p.id})">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-sm truncate">${p.name}</p>
+                        <p class="text-xs text-gray-400">${p.pinyinCode || ''} | 库存: <span class="${p.stock <= (p.minStock||0) ? 'text-red-500 font-bold' : ''}">${p.stock}</span> | ¥${p.sellingPrice || 0}</p>
+                    </div>
+                    <span class="text-2xl text-primary ml-2">+</span>
+                </div>
+                `).join('');
+            }
+            resultsDiv.classList.remove('hidden');
+        }
+
+        async function addToBillingCart(productId) {
+            const product = await dbGet('products', productId);
+            if (!product) return;
+            const existing = billingCart.find(item => item.productId === productId);
+            if (existing) {
+                existing.quantity += 1;
+                existing.subtotal = existing.quantity * (billingType === 'sale' ? product.sellingPrice : product
+                    .costPrice);
+            } else {
+                const price = billingType === 'sale' ? (product.sellingPrice || 0) : (product.costPrice || 0);
+                billingCart.push({
+                    productId: product.id,
+                    productName: product.name,
+                    unit: product.unit || '个',
+                    quantity: 1,
+                    price: price,
+                    costPrice: product.costPrice || 0,
+                    sellingPrice: product.sellingPrice || 0,
+                    subtotal: price,
+                    stock: product.stock
+                });
+            }
+            document.getElementById('billingSearchInput').value = '';
+            document.getElementById('billingSearchResults').classList.add('hidden');
+            renderBillingCart();
+            showToast('已添加到清单');
+        }
+
+        function removeFromBillingCart(index) {
+            billingCart.splice(index, 1);
+            renderBillingCart();
+        }
+
+        function updateCartQuantity(index, delta) {
+            const item = billingCart[index];
+            item.quantity = Math.max(1, item.quantity + delta);
+            item.subtotal = item.quantity * item.price;
+            renderBillingCart();
+        }
+
+        function renderBillingCart() {
+            const container = document.getElementById('billingCartItems');
+            const totalDiv = document.getElementById('billingTotal');
+            const totalAmount = document.getElementById('billingTotalAmount');
+
+            if (billingCart.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center text-sm py-4">暂无商品，请搜索添加</p>';
+                totalDiv.classList.add('hidden');
+                return;
+            }
+            totalDiv.classList.remove('hidden');
+            const total = billingCart.reduce((sum, item) => sum + item.subtotal, 0);
+            totalAmount.textContent = '¥' + total.toFixed(2);
+
+            container.innerHTML = billingCart.map((item, i) => `
+                <div class="flex items-center gap-2 py-2 border-b border-gray-100">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-sm truncate">${item.productName}</p>
+                        <p class="text-xs text-gray-400">单价: ¥${item.price.toFixed(2)} / ${item.unit}</p>
+                        ${billingType === 'sale' && item.quantity > item.stock ? '<span class="badge-danger text-xs">库存不足(仅剩'+item.stock+')</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="updateCartQuantity(${i}, -1)" class="w-7 h-7 bg-gray-200 rounded-full font-bold text-sm btn-tap">−</button>
+                        <span class="w-8 text-center font-bold text-sm">${item.quantity}</span>
+                        <button onclick="updateCartQuantity(${i}, 1)" class="w-7 h-7 bg-gray-200 rounded-full font-bold text-sm btn-tap">+</button>
+                    </div>
+                    <span class="font-bold text-sm w-16 text-right">¥${item.subtotal.toFixed(2)}</span>
+                    <button onclick="removeFromBillingCart(${i})" class="text-red-400 text-lg btn-tap">🗑</button>
+                </div>
+            `).join('');
+        }
+
+        async function confirmBilling() {
+            if (billingCart.length === 0) {
+                showToast('请先添加商品', 'warning');
+                return;
+            }
+            const type = billingType;
+            const now = new Date().toISOString();
+
+            if (type === 'sale') {
+                // 检查库存
+                const lowStockItems = [];
+                for (const item of billingCart) {
+                    const product = await dbGet('products', item.productId);
+                    if (product && product.stock < item.quantity) {
+                        lowStockItems.push(item.productName + '(库存:' + product.stock + ',需要:' + item.quantity + ')');
+                    }
+                }
+                if (lowStockItems.length > 0) {
+                    if (!confirm('以下商品库存不足：\n' + lowStockItems.join('\n') + '\n\n是否继续销售？（库存将变为负数）')) {
+                        return;
+                    }
+                }
+                // 扣减库存并记录
+                for (const item of billingCart) {
+                    const product = await dbGet('products', item.productId);
+                    if (product) {
+                        product.stock -= item.quantity;
+                        product.updatedAt = now;
+                        await dbPut('products', product);
+                    }
+                    await dbAdd('salesRecords', {
+                        productId: item.productId,
+                        productName: item.productName,
+                        quantity: item.quantity,
+                        sellingPrice: item.sellingPrice,
+                        costPrice: item.costPrice,
+                        totalAmount: item.subtotal,
+                        profit: (item.sellingPrice - item.costPrice) * item.quantity,
+                        createdAt: now
+                    });
+                }
+                showToast('✅ 销售成功！');
+            } else {
+                // 进货：增加库存
+                for (const item of billingCart) {
+                    const product = await dbGet('products', item.productId);
+                    if (product) {
+                        product.stock += item.quantity;
+                        if (item.price > 0 && item.price !== product.costPrice) {
+                            product.costPrice = item.price;
+                        }
+                        product.updatedAt = now;
+                        await dbPut('products', product);
+                    }
+                    await dbAdd('purchaseRecords', {
+                        productId: item.productId,
+                        productName: item.productName,
+                        quantity: item.quantity,
+                        costPrice: item.price,
+                        totalCost: item.subtotal,
+                        createdAt: now
+                    });
+                }
+                showToast('📥 进货成功！');
+            }
+            billingCart = [];
+            renderBillingCart();
+            document.getElementById('billingSearchInput').value = '';
+            document.getElementById('billingSearchResults').classList.add('hidden');
+        }
+
+        // ==================== 扫码模块 ====================
+        let scanStream = null;
+        let scanCallback = null;
+        let barcodeDetector = null;
+
+        async function initBarcodeDetector() {
+            if ('BarcodeDetector' in window) {
+                try {
+                    barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39',
+                            'upc_a', 'upc_e', 'qr_code'
+                        ] });
+                    return true;
+                } catch (e) {
+                    console.log('BarcodeDetector init failed:', e);
+                }
+            }
+            return false;
+        }
+
+        async function openScanForBilling() {
+            const modal = document.getElementById('scanModal');
+            modal.classList.remove('hidden');
+            document.getElementById('scanResult').textContent = '将条形码对准扫描区域';
+            document.getElementById('manualBarcodeInput').classList.add('hidden');
+            document.getElementById('manualBarcodeBtn').classList.add('hidden');
+            scanCallback = async (barcode) => {
+                document.getElementById('scanResult').textContent = '识别到: ' + barcode;
+                const products = await dbGetAll('products');
+                const found = products.find(p => p.barcode === barcode);
+                if (found) {
+                    await addToBillingCart(found.id);
+                    closeScanModal();
+                } else {
+                    document.getElementById('scanResult').textContent = '未找到条码: ' + barcode + '，请手动搜索';
+                    showToast('未找到该条码对应的商品', 'warning');
+                }
+            };
+            await startCameraScan();
+        }
+
+        async function startCameraScan() {
+            const video = document.getElementById('scanVideo');
+            try {
+                scanStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                video.srcObject = scanStream;
+                await video.play();
+                if (barcodeDetector) {
+                    scanLoop(video);
+                } else {
+                    document.getElementById('scanResult').textContent = '摄像头已开启，请使用手动输入（浏览器不支持自动识别）';
+                }
+            } catch (e) {
+                document.getElementById('scanResult').textContent = '无法访问摄像头: ' + e.message;
+                console.error('Camera error:', e);
+            }
+        }
+
+        async function scanLoop(video) {
+            if (!scanStream) return;
+            try {
+                const barcodes = await barcodeDetector.detect(video);
+                if (barcodes.length > 0 && scanCallback) {
+                    scanCallback(barcodes[0].rawValue);
+                    return;
+                }
+            } catch (e) {}
+            if (scanStream) {
+                requestAnimationFrame(() => scanLoop(video));
+            }
+        }
+
+        function stopScan() {
+            if (scanStream) {
+                scanStream.getTracks().forEach(t => t.stop());
+                scanStream = null;
+            }
+            document.getElementById('scanVideo').srcObject = null;
+            document.getElementById('scanResult').textContent = '扫描已停止';
+        }
+
+        function closeScanModal() {
+            stopScan();
+            document.getElementById('scanModal').classList.add('hidden');
+            scanCallback = null;
+        }
+
+        function manualBarcode() {
+            document.getElementById('manualBarcodeInput').classList.remove('hidden');
+            document.getElementById('manualBarcodeBtn').classList.remove('hidden');
+            document.getElementById('manualBarcodeInput').focus();
+            stopScan();
+        }
+
+        async function confirmManualBarcode() {
+            const barcode = document.getElementById('manualBarcodeInput').value.trim();
+            if (!barcode) {
+                showToast('请输入条形码', 'warning');
+                return;
+            }
+            if (scanCallback) {
+                await scanCallback(barcode);
+            }
+            document.getElementById('manualBarcodeInput').value = '';
+            document.getElementById('manualBarcodeInput').classList.add('hidden');
+            document.getElementById('manualBarcodeBtn').classList.add('hidden');
+        }
+
+        // ==================== 商品管理模块 ====================
+        async function loadProducts() {
+            const query = document.getElementById('productSearchInput').value.trim().toUpperCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const allProducts = await dbGetAll('products');
+            let filtered = allProducts;
+            if (query) {
+                filtered = filtered.filter(p =>
+                    (p.pinyinCode && p.pinyinCode.toUpperCase().includes(query)) ||
+                    (p.name && p.name.toUpperCase().includes(query)) ||
+                    (p.barcode && p.barcode.includes(query))
+                );
+            }
+            if (categoryFilter) {
+                filtered = filtered.filter(p => p.category === categoryFilter);
+            }
+            // 更新分类筛选下拉
+            const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+            const catSelect = document.getElementById('categoryFilter');
+            catSelect.innerHTML = '<option value="">全部分类</option>' +
+                categories.map(c => `<option value="${c}" ${c === categoryFilter ? 'selected' : ''}>${c}</option>`).join(
+                    '');
+
+            const listDiv = document.getElementById('productList');
+            const countP = document.getElementById('productCount');
+            countP.textContent = `共 ${filtered.length} 个商品`;
+            if (filtered.length === 0) {
+                listDiv.innerHTML =
+                    '<p class="text-center text-gray-400 py-6">暂无商品，点击右上角"新增"添加</p>';
+            } else {
+                listDiv.innerHTML = filtered.map(p => {
+                    const stockStatus = p.stock <= (p.minStock || 0) ?
+                        '<span class="badge-danger">库存不足</span>' :
+                        p.stock >= (p.maxStock || 9999) ?
+                        '<span class="badge-warning">库存过高</span>' :
+                        '<span class="badge-success">正常</span>';
+                    return `
+                <div class="card flex items-center gap-3 cursor-pointer btn-tap" onclick="openProductEdit(${p.id})">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold text-sm truncate">${p.name}</span>
+                            ${stockStatus}
+                        </div>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            拼音码: ${p.pinyinCode || '-'} | 条码: ${p.barcode || '-'} | 分类: ${p.category || '-'}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            成本: ¥${(p.costPrice||0).toFixed(2)} | 售价: ¥${(p.sellingPrice||0).toFixed(2)} | 库存: <b class="${p.stock <= (p.minStock||0) ? 'text-red-500' : ''}">${p.stock}</b> ${p.unit||'个'}
+                        </p>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteProduct(${p.id})" class="text-red-400 text-sm btn-tap px-2">🗑</button>
+                </div>
+                `;
+                }).join('');
+            }
+        }
+
+        function openProductEdit(productId = null) {
+            const modal = document.getElementById('productEditModal');
+            modal.classList.remove('hidden');
+            document.getElementById('editProductId').value = '';
+            document.getElementById('editProductName').value = '';
+            document.getElementById('editPinyinCode').value = '';
+            document.getElementById('editBarcode').value = '';
+            document.getElementById('editCategory').value = '';
+            document.getElementById('editUnit').value = '个';
+            document.getElementById('editCostPrice').value = '';
+            document.getElementById('editSellingPrice').value = '';
+            document.getElementById('editMinStock').value = '5';
+            document.getElementById('editMaxStock').value = '100';
+            document.getElementById('productEditTitle').textContent = '添加商品';
+            document.getElementById('editPinyinCode').readOnly = false;
+
+            if (productId) {
+                dbGet('products', productId).then(product => {
+                    if (!product) return;
+                    document.getElementById('editProductId').value = product.id;
+                    document.getElementById('editProductName').value = product.name || '';
+                    document.getElementById('editPinyinCode').value = product.pinyinCode || '';
+                    document.getElementById('editBarcode').value = product.barcode || '';
+                    document.getElementById('editCategory').value = product.category || '';
+                    document.getElementById('editUnit').value = product.unit || '个';
+                    document.getElementById('editCostPrice').value = product.costPrice || '';
+                    document.getElementById('editSellingPrice').value = product.sellingPrice || '';
+                    document.getElementById('editMinStock').value = product.minStock ?? 5;
+                    document.getElementById('editMaxStock').value = product.maxStock ?? 100;
+                    document.getElementById('productEditTitle').textContent = '编辑商品';
+                    document.getElementById('editPinyinCode').readOnly = true;
+                });
+            }
+        }
+
+        function closeProductEdit() {
+            document.getElementById('productEditModal').classList.add('hidden');
+        }
+
+        // 监听商品名称输入，自动生成拼音码
+        document.addEventListener('DOMContentLoaded', () => {
+            const nameInput = document.getElementById('editProductName');
+            if (nameInput) {
+                nameInput.addEventListener('input', function() {
+                    const editId = document.getElementById('editProductId').value;
+                    if (!editId) {
+                        document.getElementById('editPinyinCode').value = getPinyinCode(this.value);
+                    }
+                });
+            }
+        });
+
+        async function saveProduct(event) {
+            event.preventDefault();
+            const id = document.getElementById('editProductId').value;
+            const name = document.getElementById('editProductName').value.trim();
+            const pinyinCode = document.getElementById('editPinyinCode').value.trim() || getPinyinCode(name);
+            const barcode = document.getElementById('editBarcode').value.trim();
+            const category = document.getElementById('editCategory').value.trim();
+            const unit = document.getElementById('editUnit').value.trim() || '个';
+            const costPrice = parseFloat(document.getElementById('editCostPrice').value) || 0;
+            const sellingPrice = parseFloat(document.getElementById('editSellingPrice').value) || 0;
+            const minStock = parseInt(document.getElementById('editMinStock').value) || 5;
+            const maxStock = parseInt(document.getElementById('editMaxStock').value) || 100;
+
+            if (!name) {
+                showToast('请输入商品名称', 'warning');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            if (id) {
+                const product = await dbGet('products', parseInt(id));
+                if (product) {
+                    product.name = name;
+                    product.barcode = barcode;
+                    product.category = category;
+                    product.unit = unit;
+                    product.costPrice = costPrice;
+                    product.sellingPrice = sellingPrice;
+                    product.minStock = minStock;
+                    product.maxStock = maxStock;
+                    product.updatedAt = now;
+                    await dbPut('products', product);
+                    showToast('✅ 商品已更新');
+                }
+            } else {
+                await dbAdd('products', {
+                    name,
+                    pinyinCode,
+                    barcode,
+                    category,
+                    unit,
+                    costPrice,
+                    sellingPrice,
+                    stock: 0,
+                    minStock,
+                    maxStock,
+                    createdAt: now,
+                    updatedAt: now
+                });
+                showToast('✅ 商品已添加');
+            }
+            closeProductEdit();
+            loadProducts();
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('确定删除该商品吗？此操作不可恢复。')) return;
+            await dbDelete('products', productId);
+            showToast('商品已删除');
+            loadProducts();
+        }
+
+        // ==================== 库存模块 ====================
+        async function loadStock() {
+            const query = document.getElementById('stockSearchInput').value.trim().toUpperCase();
+            const filter = document.getElementById('stockFilter').value;
+            const allProducts = await dbGetAll('products');
+            let filtered = allProducts;
+
+            if (query) {
+                filtered = filtered.filter(p =>
+                    (p.pinyinCode && p.pinyinCode.toUpperCase().includes(query)) ||
+                    (p.name && p.name.toUpperCase().includes(query))
+                );
+            }
+
+            const minStock = (p) => p.minStock ?? 5;
+            const maxStock = (p) => p.maxStock ?? 100;
+
+            if (filter === 'low') filtered = filtered.filter(p => p.stock <= minStock(p) && p.stock > 0);
+            if (filter === 'high') filtered = filtered.filter(p => p.stock >= maxStock(p));
+            if (filter === 'zero') filtered = filtered.filter(p => p.stock <= 0);
+            if (filter === 'warning') filtered = filtered.filter(p => p.stock <= minStock(p) || p.stock >= maxStock(p));
+
+            const warningCount = allProducts.filter(p => p.stock <= minStock(p)).length;
+            const highCount = allProducts.filter(p => p.stock >= maxStock(p)).length;
+            const zeroCount = allProducts.filter(p => p.stock <= 0).length;
+            const warningSummary = document.getElementById('warningSummary');
+            const warningSummaryText = document.getElementById('warningSummaryText');
+            if (warningCount > 0 || highCount > 0 || zeroCount > 0) {
+                warningSummary.classList.remove('hidden');
+                warningSummaryText.textContent =
+                    `低于下限: ${warningCount}个 | 零库存: ${zeroCount}个 | 高于上限: ${highCount}个`;
+            } else {
+                warningSummary.classList.add('hidden');
+            }
+
+            const listDiv = document.getElementById('stockList');
+            if (filtered.length === 0) {
+                listDiv.innerHTML = '<p class="text-center text-gray-400 py-6">暂无匹配的库存记录</p>';
+            } else {
+                listDiv.innerHTML = filtered.map(p => {
+                    const isLow = p.stock <= minStock(p);
+                    const isHigh = p.stock >= maxStock(p);
+                    const isZero = p.stock <= 0;
+                    let badge = '';
+                    if (isZero) badge = '<span class="badge-danger">缺货</span>';
+                    else if (isLow) badge = '<span class="badge-danger">库存不足</span>';
+                    else if (isHigh) badge = '<span class="badge-warning">库存过高</span>';
+                    else badge = '<span class="badge-success">正常</span>';
+
+                    const progressPercent = Math.min(100, Math.max(0, (p.stock / maxStock(p)) * 100));
+                    const barColor = isZero ? 'bg-red-400' : isLow ? 'bg-red-400' : isHigh ?
+                        'bg-amber-400' : 'bg-green-400';
+
+                    return `
+                <div class="card">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-sm">${p.name}</span>
+                        ${badge}
+                    </div>
+                    <p class="text-xs text-gray-400">${p.pinyinCode || '-'} | 分类: ${p.category || '-'}</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="text-xs font-bold w-10">${p.stock}</span>
+                        <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full ${barColor} rounded-full transition-all" style="width:${progressPercent}%"></div>
+                        </div>
+                        <span class="text-xs text-gray-400">上限${maxStock(p)}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">下限: ${minStock(p)} | 成本: ¥${(p.costPrice||0).toFixed(2)} | 售价: ¥${(p.sellingPrice||0).toFixed(2)}</p>
+                </div>
+                `;
+                }).join('');
+            }
+        }
+
+        // ==================== 报表模块 ====================
+        async function loadReports() {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+            const allSales = await dbGetAll('salesRecords');
+
+            const todaySales = allSales.filter(s => s.createdAt >= todayStart);
+            const monthSales = allSales.filter(s => s.createdAt >= monthStart);
+
+            const todayTotal = todaySales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+            const monthTotal = monthSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+            const todayProfitVal = todaySales.reduce((sum, s) => sum + (s.profit || 0), 0);
+            const monthProfitVal = monthSales.reduce((sum, s) => sum + (s.profit || 0), 0);
+
+            document.getElementById('todaySales').textContent = '¥' + todayTotal.toFixed(2);
+            document.getElementById('monthSales').textContent = '¥' + monthTotal.toFixed(2);
+            document.getElementById('todayProfit').textContent = '¥' + todayProfitVal.toFixed(2);
+            document.getElementById('monthProfit').textContent = '¥' + monthProfitVal.toFixed(2);
+            document.getElementById('todayOrders').textContent = todaySales.length + '笔';
+            document.getElementById('monthOrders').textContent = monthSales.length + '笔';
+
+            // 热销排行
+            const productSales = {};
+            monthSales.forEach(s => {
+                if (!productSales[s.productId]) {
+                    productSales[s.productId] = { name: s.productName, quantity: 0, amount: 0, profit: 0 };
+                }
+                productSales[s.productId].quantity += s.quantity;
+                productSales[s.productId].amount += s.totalAmount || 0;
+                productSales[s.productId].profit += s.profit || 0;
+            });
+            const sorted = Object.values(productSales).sort((a, b) => b.quantity - a.quantity).slice(0, 10);
+            const hotDiv = document.getElementById('hotRanking');
+            if (sorted.length === 0) {
+                hotDiv.innerHTML = '<p class="text-gray-400 text-center text-sm py-3">暂无销售数据</p>';
+            } else {
+                hotDiv.innerHTML = sorted.map((item, i) => `
+                <div class="flex items-center gap-2 py-1.5 border-b border-gray-100">
+                    <span class="font-bold text-sm w-6 ${i < 3 ? 'text-primary' : 'text-gray-400'}">#${i+1}</span>
+                    <span class="flex-1 text-sm truncate">${item.name}</span>
+                    <span class="text-xs text-gray-500">售${item.quantity}件</span>
+                    <span class="text-xs font-bold">¥${item.amount.toFixed(2)}</span>
+                </div>
+                `).join('');
+            }
+
+            // 自定义日期查询
+            document.getElementById('customReportResult').innerHTML = '';
+        }
+
+        async function loadReports() {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const allSales = await dbGetAll('salesRecords');
+            const todaySales = allSales.filter(s => s.createdAt >= todayStart);
+            const monthSales = allSales.filter(s => s.createdAt >= monthStart);
+            document.getElementById('todaySales').textContent = '¥' + todaySales.reduce((sum, s) => sum + (s.totalAmount || 0),
+                0).toFixed(2);
+            document.getElementById('monthSales').textContent = '¥' + monthSales.reduce((sum, s) => sum + (s.totalAmount || 0),
+                0).toFixed(2);
+            document.getElementById('todayProfit').textContent = '¥' + todaySales.reduce((sum, s) => sum + (s.profit || 0), 0)
+            .toFixed(2);
+            document.getElementById('monthProfit').textContent = '¥' + monthSales.reduce((sum, s) => sum + (s.profit || 0), 0)
+            .toFixed(2);
+            document.getElementById('todayOrders').textContent = todaySales.length + '笔';
+            document.getElementById('monthOrders').textContent = monthSales.length + '笔';
+            const productSales = {};
+            monthSales.forEach(s => {
+                if (!productSales[s.productId]) productSales[s.productId] = { name: s.productName, quantity: 0,
+                    amount: 0, profit: 0 };
+                productSales[s.productId].quantity += s.quantity;
+                productSales[s.productId].amount += s.totalAmount || 0;
+                productSales[s.productId].profit += s.profit || 0;
+            });
+            const sorted = Object.values(productSales).sort((a, b) => b.quantity - a.quantity).slice(0, 10);
+            const hotDiv = document.getElementById('hotRanking');
+            hotDiv.innerHTML = sorted.length === 0 ? '<p class="text-gray-400 text-center text-sm py-3">暂无销售数据</p>' :
+                sorted.map((item, i) =>
+                    `<div class="flex items-center gap-2 py-1.5 border-b border-gray-100"><span class="font-bold text-sm w-6 ${i<3?'text-primary':'text-gray-400'}">#${i+1}</span><span class="flex-1 text-sm truncate">${item.name}</span><span class="text-xs text-gray-500">售${item.quantity}件</span><span class="text-xs font-bold">¥${item.amount.toFixed(2)}</span></div>`
+                    ).join('');
+
+            // 自定义日期
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            const customDiv = document.getElementById('customReportResult');
+            if (startDate && endDate) {
+                const start = new Date(startDate).toISOString();
+                const end = new Date(endDate + 'T23:59:59').toISOString();
+                const filtered = allSales.filter(s => s.createdAt >= start && s.createdAt <= end);
+                const total = filtered.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+                const profit = filtered.reduce((sum, s) => sum + (s.profit || 0), 0);
+                customDiv.innerHTML =
+                    `<p>📅 ${startDate} ~ ${endDate}</p><p>销售额: <b>¥${total.toFixed(2)}</b> | 利润: <b>¥${profit.toFixed(2)}</b> | 共<b>${filtered.length}</b>笔</p>`;
+            }
+        }
+
+        // ==================== 备份模块 ====================
+        function exportCSV() {
+            dbGetAll('products').then(products => {
+                if (products.length === 0) { showToast('没有商品数据可导出', 'warning'); return; }
+                const headers = ['ID', '名称', '拼音码', '条形码', '分类', '单位', '成本价', '售价', '库存', '库存下限',
+                    '库存上限', '创建时间', '更新时间'
+                ];
+                const rows = products.map(p => [p.id, p.name, p.pinyinCode, p.barcode, p.category, p.unit, p
+                    .costPrice, p.sellingPrice, p.stock, p.minStock, p.maxStock, p.createdAt, p.updatedAt
+                ]);
+                const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"')
+                    .join(',')).join('\n');
+                downloadFile('商品列表_' + new Date().toISOString().slice(0, 10) + '.csv', '\uFEFF' + csv,
+                    'text/csv;charset=utf-8');
+                showToast('商品CSV已导出');
+            });
+        }
+
+        function exportSalesCSV() {
+            dbGetAll('salesRecords').then(records => {
+                if (records.length === 0) { showToast('没有销售记录可导出', 'warning'); return; }
+                const headers = ['ID', '商品ID', '商品名称', '数量', '售价', '成本价', '总金额', '利润', '时间'];
+                const rows = records.map(r => [r.id, r.productId, r.productName, r.quantity, r.sellingPrice, r
+                    .costPrice, r.totalAmount, r.profit, r.createdAt
+                ]);
+                const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"')
+                    .join(',')).join('\n');
+                downloadFile('销售记录_' + new Date().toISOString().slice(0, 10) + '.csv', '\uFEFF' + csv,
+                    'text/csv;charset=utf-8');
+                showToast('销售记录CSV已导出');
+            });
+        }
+
+        async function exportFullBackup() {
+            const products = await dbGetAll('products');
+            const salesRecords = await dbGetAll('salesRecords');
+            const purchaseRecords = await dbGetAll('purchaseRecords');
+            const backup = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                products,
+                salesRecords,
+                purchaseRecords
+            };
+            const json = JSON.stringify(backup, null, 2);
+            downloadFile('五金店完整备份_' + new Date().toISOString().slice(0, 10) + '.json', json,
+            'application/json');
+            showToast('完整备份已导出');
+        }
+
+        function downloadFile(filename, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function restoreBackup() {
+            const fileInput = document.getElementById('restoreFileInput');
+            const file = fileInput.files[0];
+            if (!file) return;
+            if (!confirm('⚠️ 恢复备份将覆盖所有现有数据！确定继续吗？')) {
+                fileInput.value = '';
+                return;
+            }
+            try {
+                const text = await file.text();
+                const backup = JSON.parse(text);
+                if (!backup.products || !backup.salesRecords || !backup.purchaseRecords) {
+                    throw new Error('备份文件格式不正确');
+                }
+                await dbClear('products');
+                await dbClear('salesRecords');
+                await dbClear('purchaseRecords');
+                for (const p of backup.products) await dbAdd('products', p);
+                for (const s of backup.salesRecords) await dbAdd('salesRecords', s);
+                for (const pr of backup.purchaseRecords) await dbAdd('purchaseRecords', pr);
+                showToast('✅ 数据恢复成功！共恢复' + backup.products.length + '个商品');
+                loadProducts();
+                loadStock();
+                loadReports();
+            } catch (e) {
+                showToast('恢复失败: ' + e.message, 'error');
+            }
+            fileInput.value = '';
+        }
+
+        async function loadDataOverview() {
+            const products = await dbGetAll('products');
+            const sales = await dbGetAll('salesRecords');
+            const purchases = await dbGetAll('purchaseRecords');
+            const totalStock = products.reduce((s, p) => s + p.stock, 0);
+            const overviewDiv = document.getElementById('dataOverview');
+            overviewDiv.innerHTML = `
+            <p>📦 商品总数: <b>${products.length}</b></p>
+            <p>📊 总库存量: <b>${totalStock}</b></p>
+            <p>🛒 销售记录: <b>${sales.length}</b> 笔</p>
+            <p>📥 进货记录: <b>${purchases.length}</b> 笔</p>
+            <p>💾 数据库: IndexedDB (浏览器本地)</p>
+            `;
+        }
+
+        async function clearAllData() {
+            if (!confirm('⚠️ 此操作将删除所有数据且不可恢复！\n建议先导出备份。\n\n确定清除所有数据吗？')) return;
+            if (!confirm('再次确认：清除所有商品、销售记录、进货记录？')) return;
+            await dbClear('products');
+            await dbClear('salesRecords');
+            await dbClear('purchaseRecords');
+            showToast('所有数据已清除');
+            loadProducts();
+            loadStock();
+            loadReports();
+            loadDataOverview();
+        }
+
+        // ==================== PWA 初始化 ====================
+        function initPWA() {
+            const manifestData = {
+                name: '五金店管家 - 进销存管理',
+                short_name: '五金店管家',
+                description: '五金店进销存管理工具',
+                start_url: location.href,
+                display: 'standalone',
+                orientation: 'portrait',
+                background_color: '#f5f5f5',
+                theme_color: '#d97706',
+                icons: [{
+                    src: 'data:image/svg+xml,' + encodeURIComponent(
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><rect width="192" height="192" rx="32" fill="#d97706"/><text x="96" y="120" font-size="100" text-anchor="middle" fill="white">🔧</text></svg>'
+                        ),
+                    sizes: '192x192',
+                    type: 'image/svg+xml'
+                }]
+            };
+            const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(blob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+                self.addEventListener('fetch', e => {
+                    e.respondWith(
+                        fetch(e.request).catch(() => caches.match(e.request))
+                    );
+                });
+                `;
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swURL).catch(() => {
+                    console.log('SW registration via blob not supported, app works offline via IndexedDB');
+                });
+            }
+        }
+
+        // ==================== 应用初始化 ====================
+        async function initApp() {
+            await openDB();
+            await initBarcodeDetector();
+            initPWA();
+            // 加载初始数据
+            const products = await dbGetAll('products');
+            if (products.length === 0) {
+                // 预置一些示例五金商品
+                const sampleProducts = [
+                    { name: '十字螺丝刀', pinyinCode: 'SZSD', barcode: '69012340001', category: '螺丝类', unit: '把',
+                        costPrice: 5.5, sellingPrice: 12, stock: 50, minStock: 10, maxStock: 100, createdAt: new Date()
+                            .toISOString(), updatedAt: new Date().toISOString() },
+                    { name: '电钻', pinyinCode: 'DZ', barcode: '69012340002', category: '电动工具', unit: '台', costPrice: 180,
+                        sellingPrice: 350, stock: 8, minStock: 3, maxStock: 20, createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString() },
+                    { name: '锤子', pinyinCode: 'CZ', barcode: '69012340003', category: '手动工具', unit: '把', costPrice: 15,
+                        sellingPrice: 30, stock: 25, minStock: 5, maxStock: 50, createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString() },
+                    { name: '活动扳手', pinyinCode: 'HDBS', barcode: '69012340004', category: '手动工具', unit: '把',
+                        costPrice: 22, sellingPrice: 45, stock: 15, minStock: 5, maxStock: 40, createdAt: new Date()
+                            .toISOString(), updatedAt: new Date().toISOString() },
+                    { name: '钳子', pinyinCode: 'QZ', barcode: '69012340005', category: '手动工具', unit: '把', costPrice: 12,
+                        sellingPrice: 25, stock: 30, minStock: 8, maxStock: 60, createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString() },
+                    { name: '膨胀螺丝', pinyinCode: 'PZLS', barcode: '69012340006', category: '螺丝类', unit: '盒',
+                        costPrice: 8, sellingPrice: 18, stock: 100, minStock: 20, maxStock: 200, createdAt: new Date()
+                            .toISOString(), updatedAt: new Date().toISOString() },
+                    { name: '生料带', pinyinCode: 'SLD', barcode: '69012340007', category: '水暖材料', unit: '卷', costPrice: 2,
+                        sellingPrice: 5, stock: 200, minStock: 30, maxStock: 300, createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString() },
+                    { name: 'PVC管', pinyinCode: 'PVCG', barcode: '69012340008', category: '水暖材料', unit: '根',
+                        costPrice: 6, sellingPrice: 15, stock: 60, minStock: 10, maxStock: 80, createdAt: new Date()
+                            .toISOString(), updatedAt: new Date().toISOString() },
+                ];
+                for (const sp of sampleProducts) {
+                    await dbAdd('products', sp);
+                }
+                console.log('已初始化示例商品数据');
+            }
+            loadProducts();
+            loadStock();
+            loadReports();
+            loadDataOverview();
+            console.log('五金店管家应用已就绪 🏗️');
+        }
+
+        // 启动应用
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        // 关闭弹窗的点击事件
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                if (e.target.id === 'productEditModal') closeProductEdit();
+                if (e.target.id === 'scanModal') closeScanModal();
+            }
+        });
+
+        // 防止意外缩放
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+        document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+        document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+
+        console.log('🔧 五金店管家 - 进销存管理系统');
+        console.log('📱 PWA适配 | 💾 IndexedDB持久化 | 🏗️ 纯前端方案');
+        console.log('功能：拼音码查找 | 扫码开单 | 库存预警 | 统计报表 | 数据备份');
+    </script>
+</body>
+</html>
